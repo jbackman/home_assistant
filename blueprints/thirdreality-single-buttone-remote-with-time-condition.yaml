@@ -16,8 +16,7 @@ blueprint:
       description: "Define time frames and/or days when this automation is allowed to run (Optional)."
       default: []
       selector:
-        condition:
-          time: {}
+        condition: {}
     button_single_click:
       name: Button single-click
       description: Action to perform on button single click
