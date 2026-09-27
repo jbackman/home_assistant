@@ -9,22 +9,18 @@ blueprint:
       selector:
         device:
           integration: zha
-          manufacturer: Samjin
     button_short_press:
       name: Single Short Press
-      description: Action to run on a single press.
       default: []
       selector:
         action: {}
     button_double_press:
       name: Double Press
-      description: Action to run on a double press.
       default: []
       selector:
         action: {}
     button_long_press:
       name: Hold / Long Press
-      description: Action to run when held down.
       default: []
       selector:
         action: {}
@@ -40,28 +36,18 @@ trigger:
 
 action:
   - variables:
-      # Handle both payload styles (params dictionary or args list/dict)
-      press_type: >-
-        {% if trigger.event.data.params is defined and trigger.event.data.params.press_type is defined %}
-          {{ trigger.event.data.params.press_type }}
-        {% elif trigger.event.data.args is defined and trigger.event.data.args is mapping and 'press_type' in trigger.event.data.args %}
-          {{ trigger.event.data.args.press_type }}
-        {% else %}
-          unknown
-        {% endif %}
-
+      command: "{{ trigger.event.data.command }}"
+      press_type: "{{ trigger.event.data.params.press_type if trigger.event.data.params is defined else '' }}"
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ press_type == 'single' }}"
+            value_template: "{{ press_type == 'single' or command == 'button_single' }}"
         sequence: !input button_short_press
-
       - conditions:
           - condition: template
-            value_template: "{{ press_type == 'double' }}"
+            value_template: "{{ press_type == 'double' or command == 'button_double' }}"
         sequence: !input button_double_press
-
       - conditions:
           - condition: template
-            value_template: "{{ press_type == 'hold' }}"
+            value_template: "{{ press_type == 'hold' or command == 'button_hold' }}"
         sequence: !input button_long_press
