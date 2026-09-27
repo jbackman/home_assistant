@@ -1,0 +1,58 @@
+blueprint:
+  name: ZHA - Samjin Button Control
+  description: Control actions using a Samjin (SmartThings) Button via ZHA events.
+  domain: automation
+  input:
+    samjin_button:
+      name: Samjin Button Device
+      description: Select the Samjin Button device.
+      selector:
+        device:
+          integration: zha
+          manufacturer: Samjin
+  # Instead of hardcoding the IEEE, we filter the zha_event dynamically by its linked Device ID
+  trigger:
+    - platform: event
+      event_type: zha_event
+      event_data:
+        device_id: !input samjin_button
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.event.data.command == 'single' }}"
+        sequence: !input single_press
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.event.data.command == 'double' }}"
+        sequence: !input double_press
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.event.data.command == 'hold' }}"
+        sequence: !input hold_press
+    default: []
+  
+  # Action blocks defined as inputs so you can map them in the UI
+  input:
+    single_press:
+      name: Single Press Action
+      description: Actions to run when the button is pressed once.
+      default: []
+      selector:
+        action: {}
+    double_press:
+      name: Double Press Action
+      description: Actions to run when the button is double-pressed.
+      default: []
+      selector:
+        action: {}
+    hold_press:
+      name: Hold Action
+      description: Actions to run when the button is held down.
+      default: []
+      selector:
+        action: {}
+
+mode: restart
+
