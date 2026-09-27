@@ -1,58 +1,67 @@
 blueprint:
-  name: ZHA - Samjin Button Control
-  description: Control actions using a Samjin (SmartThings) Button via ZHA events.
+  name: ZHA - Samjin / SmartThings Button
+  description: Automate actions for Single Press, Double Press, and Hold on a Samjin (SmartThings) button via ZHA.
   domain: automation
   input:
     samjin_button:
-      name: Samjin Button Device
-      description: Select the Samjin Button device.
+      name: Select Samjin Button
+      description: The Samjin or SmartThings button device.
       selector:
         device:
           integration: zha
           manufacturer: Samjin
-  # Instead of hardcoding the IEEE, we filter the zha_event dynamically by its linked Device ID
-  trigger:
-    - platform: event
-      event_type: zha_event
-      event_data:
-        device_id: !input samjin_button
-
-action:
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ trigger.event.data.command == 'single' }}"
-        sequence: !input single_press
-      - conditions:
-          - condition: template
-            value_template: "{{ trigger.event.data.command == 'double' }}"
-        sequence: !input double_press
-      - conditions:
-          - condition: template
-            value_template: "{{ trigger.event.data.command == 'hold' }}"
-        sequence: !input hold_press
-    default: []
-  
-  # Action blocks defined as inputs so you can map them in the UI
-  input:
-    single_press:
-      name: Single Press Action
-      description: Actions to run when the button is pressed once.
+    button_short_press:
+      name: Single Short Press
+      description: Action to run on a single press.
       default: []
       selector:
         action: {}
-    double_press:
-      name: Double Press Action
-      description: Actions to run when the button is double-pressed.
+    button_double_press:
+      name: Double Press
+      description: Action to run on a double press.
       default: []
       selector:
         action: {}
-    hold_press:
-      name: Hold Action
-      description: Actions to run when the button is held down.
+    button_long_press:
+      name: Hold / Long Press
+      description: Action to run when held down.
       default: []
       selector:
         action: {}
 
 mode: restart
+max_exceeded: silent
 
+trigger:
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_id: !input samjin_button
+
+action:
+  - variables:
+      # Handle both payload styles (params dictionary or args list/dict)
+      press_type: >-
+        {% if trigger.event.data.params is defined and trigger.event.data.params.press_type is defined %}
+          {{ trigger.event.data.params.press_type }}
+        {% elif trigger.event.data.args is defined and trigger.event.data.args is mapping and 'press_type' in trigger.event.data.args %}
+          {{ trigger.event.data.args.press_type }}
+        {% else %}
+          unknown
+        {% endif %}
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ press_type == 'single' }}"
+        sequence: !input button_short_press
+
+      - conditions:
+          - condition: template
+            value_template: "{{ press_type == 'double' }}"
+        sequence: !input button_double_press
+
+      - conditions:
+          - condition: template
+            value_template: "{{ press_type == 'hold' }}"
+        sequence: !input button_long_press
