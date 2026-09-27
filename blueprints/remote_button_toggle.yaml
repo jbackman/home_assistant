@@ -1,0 +1,39 @@
+blueprint:
+  name: Remote Button - Single Short Press Light Toggle
+  description: Toggles a target light when a specific remote button press event with custom arguments is fired.
+  domain: automation
+  input:
+    remote_device:
+      name: Remote Device
+      description: The remote control device firing the event.
+      selector:
+        device: {}
+    target_light:
+      name: Target Light
+      description: The light to toggle ON or OFF.
+      selector:
+        target:
+          entity:
+            domain: light
+
+mode: single
+max_exceeded: silent
+
+trigger:
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_id: !input remote_device
+      command: Remote Button Short Press
+      args:
+        - 1
+        - 0
+        - 0
+        - 0
+      params:
+        press_type: single
+        command_id: 0
+
+action:
+  - service: light.toggle
+    target: !input target_light
