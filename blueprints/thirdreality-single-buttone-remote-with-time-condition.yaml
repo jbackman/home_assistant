@@ -1,0 +1,65 @@
+blueprint:
+  name: ZHA - THIRDREALITY Single Button Remote (With Multiple Time Conditions)
+  description: Control things with THIRDREALITY Single Button Remote during specified time periods.
+  domain: automation
+  input:
+    remote:
+      name: Remote
+      description: THIRDREALITY remote to use
+      selector:
+        device:
+          integration: zha
+          manufacturer: "Third Reality, Inc"
+          model: "3RSB22BZ"
+    time_conditions:
+      name: Allowed Time Periods
+      description: "Define one or more time windows or days when the button actions are allowed to run."
+      default:
+        - condition: time
+          after: "00:00:00"
+          before: "23:59:59"
+      selector:
+        condition: {}
+    button_single_click:
+      name: Button single-click
+      description: Action to perform on button single click
+      default: []
+      selector:
+        action: {}
+    button_double_click:
+      name: Button double-click
+      description: Action to perform on button double click
+      default: []
+      selector:
+        action: {}
+    button_hold:
+      name: Button hold
+      description: Action to perform on button hold
+      default: []
+      selector:
+        action: {}
+
+mode: restart
+max_exceeded: silent
+
+trigger:
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_id: !input remote
+
+condition: !input time_conditions
+
+action:
+  - variables:
+      command: '{{ trigger.event.data.command }}'
+  - choose:
+      - conditions:
+          - '{{ command == ''single'' }}'
+        sequence: !input button_single_click
+      - conditions:
+          - '{{ command == ''double'' }}'
+        sequence: !input button_double_click
+      - conditions:
+          - '{{ command == ''hold'' }}'
+        sequence: !input button_hold

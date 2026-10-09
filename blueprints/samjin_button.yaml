@@ -1,0 +1,53 @@
+blueprint:
+  name: ZHA - Samjin / SmartThings Button
+  description: Automate actions for Single Press, Double Press, and Hold on a Samjin (SmartThings) button via ZHA.
+  domain: automation
+  input:
+    samjin_button:
+      name: Select Samjin Button
+      description: The Samjin or SmartThings button device.
+      selector:
+        device:
+          integration: zha
+    button_short_press:
+      name: Single Short Press
+      default: []
+      selector:
+        action: {}
+    button_double_press:
+      name: Double Press
+      default: []
+      selector:
+        action: {}
+    button_long_press:
+      name: Hold / Long Press
+      default: []
+      selector:
+        action: {}
+
+mode: restart
+max_exceeded: silent
+
+trigger:
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_id: !input samjin_button
+
+action:
+  - variables:
+      command: "{{ trigger.event.data.command }}"
+      press_type: "{{ trigger.event.data.params.press_type if trigger.event.data.params is defined else '' }}"
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ press_type == 'single' or command == 'button_single' }}"
+        sequence: !input button_short_press
+      - conditions:
+          - condition: template
+            value_template: "{{ press_type == 'double' or command == 'button_double' }}"
+        sequence: !input button_double_press
+      - conditions:
+          - condition: template
+            value_template: "{{ press_type == 'hold' or command == 'button_hold' }}"
+        sequence: !input button_long_press
