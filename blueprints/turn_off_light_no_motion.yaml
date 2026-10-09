@@ -1,0 +1,56 @@
+blueprint:
+  name: Turn off light after no motion
+  description: Automatically turns off a light if it is already on and no motion has been detected for a specified period of time.
+  domain: automation
+  input:
+    motion_sensor:
+      name: Motion Sensor
+      description: The sensor used to detect presence or movement.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: [motion, occupancy]
+    target_light:
+      name: Light
+      description: The light entity to turn off.
+      selector:
+        target:
+          entity:
+            domain: light
+    no_motion_wait:
+      name: Inactivity Duration
+      description: Time to wait with no motion before turning off the light.
+      default: 120
+      selector:
+        duration:
+
+mode: restart
+max_exceeded: silent
+
+trigger:
+  - platform: state
+    entity_id: !input motion_sensor
+    to: "off"
+
+condition:
+  # Verify the light is currently on
+  - condition: state
+    entity_id: !input target_light
+    state: "on"
+
+action:
+  # Wait the defined duration while motion stays 'off'
+  - wait_for_trigger:
+      - platform: state
+        entity_id: !input motion_sensor
+        to: "on"
+    timeout: !input no_motion_wait
+    continue_on_timeout: true
+
+  # If timeout was reached (no new motion), turn off the light
+  - condition: template
+    value_template: "{{ wait.trigger is none }}"
+
+  - service: light.turn_off
+    target: !input target_light
+
