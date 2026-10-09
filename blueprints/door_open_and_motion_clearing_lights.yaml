@@ -1,0 +1,78 @@
+blueprint:
+  name: Door Open & Motion-Cleared Lighting
+  description: >-
+    Turns on lights when any selected contact sensor opens. Keeps lights on
+    while motion is present, and turns them off after the motion sensor has been
+    clear ('off') for a user-defined duration.
+  domain: automation
+  input:
+    contact_sensors:
+      name: Contact Sensors
+      description: One or more door/window contact sensors to trigger the light.
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+              device_class: door
+            - domain: binary_sensor
+              device_class: window
+            - domain: binary_sensor
+              device_class: opening
+          multiple: true
+
+    motion_sensor:
+      name: Motion Sensor
+      description: The motion sensor used to detect ongoing presence in the space.
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+              device_class: motion
+            - domain: binary_sensor
+              device_class: occupancy
+          multiple: false
+
+    target_light:
+      name: Target Lights / Switches
+      description: The light entity, switch, or group to control.
+      selector:
+        target:
+          entity:
+            - domain: light
+            - domain: switch
+
+    no_motion_wait:
+      name: Motion Cleared Wait Time
+      description: Time to wait after motion has completely cleared before turning lights off.
+      default: 120
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+          mode: slider
+
+mode: restart
+max_exceeded: silent
+
+trigger:
+  - platform: state
+    entity_id: !input contact_sensors
+    to: "on"
+
+action:
+  - service: homeassistant.turn_on
+    target: !input target_light
+
+  # Block execution until motion clears and stays cleared for the specified duration
+  - wait_for_trigger:
+      - platform: state
+        entity_id: !input motion_sensor
+        to: "off"
+        for:
+          seconds: !input no_motion_wait
+    continue_on_timeout: false
+
+  - service: homeassistant.turn_off
+    target: !input target_light
+
